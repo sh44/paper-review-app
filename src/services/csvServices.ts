@@ -4,7 +4,9 @@ import type { Paper } from "../types/Paper";
 
 export function loadPapers(): Promise<Paper[]> {
   return new Promise((resolve, reject) => {
-    Papa.parse<Record<string, string>>("/papers.csv", {
+    const csvUrl = `${import.meta.env.BASE_URL}papers.csv`;
+
+    Papa.parse<Record<string, string>>(csvUrl, {
       header: true,
       skipEmptyLines: true,
       download: true,
