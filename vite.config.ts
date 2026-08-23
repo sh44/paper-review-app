@@ -4,6 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  base: "/paper-review-app/",
+  
   plugins: [
     react(),
     tailwindcss(),
@@ -25,19 +27,22 @@ export default defineConfig({
         display: "standalone",
         orientation: "portrait",
 
+        start_url: "/paper-review-app/",
+        scope: "/paper-review-app/",
+        
         icons: [
           {
-            src: "pwa-192x192.png",
+            src: "/paper-review-app/pwa-192x192.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "pwa-512x512.png",
+            src: "/paper-review-app/pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
           },
           {
-            src: "pwa-512x512.png",
+            src: "/paper-review-app/pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
