@@ -1,4 +1,4 @@
-export type Decision = "reject" | "accept" | "maybe";
+export type Decision = "inutile" | "cite" | "ideas";
 
 export interface Paper {
   Context: string;

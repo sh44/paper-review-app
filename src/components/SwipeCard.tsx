@@ -6,7 +6,9 @@ import {
 } from "framer-motion";
 
 import type { Paper, Decision } from "../types/Paper";
+
 import PaperCard from "./PaperCard";
+
 import { useIsTouchDevice } from "../hooks/useIsTouchDevice";
 
 interface SwipeCardProps {
@@ -53,30 +55,21 @@ function SwipeCard({
     let targetX = 0;
     let targetY = 0;
 
-    if (decision === "reject") {
+    if (decision === "inutile") {
       targetX = -window.innerWidth * 1.3;
     }
 
-    if (decision === "accept") {
+    if (decision === "cite") {
       targetX = window.innerWidth * 1.3;
     }
 
-    if (decision === "maybe") {
+    if (decision === "ideas") {
       targetY = window.innerHeight * 1.3;
     }
 
-    /*
-     * Prima anima la card fuori dallo schermo.
-     *
-     * Poi comunichiamo ad App la decisione.
-     *
-     * App cambierà currentIndex e, grazie al key
-     * sulla SwipeCard, verrà montata una nuova istanza
-     * con x/y nuovamente a 0.
-     */
     await animate(
-      decision === "maybe" ? y : x,
-      decision === "maybe" ? targetY : targetX,
+      decision === "ideas" ? y : x,
+      decision === "ideas" ? targetY : targetX,
       {
         duration: 0.25,
         ease: "easeOut",
@@ -103,45 +96,34 @@ function SwipeCard({
         }}
         dragElastic={1}
         onDragEnd={(_, info) => {
-          if (!isTouchDevice) {
-            return;
-          }
+          if (!isTouchDevice) return;
 
           const horizontal = info.offset.x;
           const vertical = info.offset.y;
 
-          /*
-           * Swipe orizzontale.
-           */
           if (Math.abs(horizontal) > 120) {
-            void decide(
+            decide(
               horizontal > 0
-                ? "accept"
-                : "reject"
+                ? "cite"
+                : "inutile"
             );
 
             return;
           }
 
-          /*
-           * Swipe verticale.
-           */
           if (Math.abs(vertical) > 120) {
-            void decide("maybe");
+            decide("ideas");
+
             return;
           }
 
-          /*
-           * Swipe troppo piccolo:
-           * riportiamo la card al centro.
-           */
-          void animate(x, 0, {
+          animate(x, 0, {
             type: "spring",
             stiffness: 500,
             damping: 30,
           });
 
-          void animate(y, 0, {
+          animate(y, 0, {
             type: "spring",
             stiffness: 500,
             damping: 30,
@@ -161,7 +143,7 @@ function SwipeCard({
           displayDecision={displayDecision}
         />
 
-        {/* Reject */}
+        {/* Inutile */}
         <motion.div
           style={{ opacity: rejectOpacity }}
           className="
@@ -174,10 +156,10 @@ function SwipeCard({
             tracking-wider text-red-700
           "
         >
-          Reject
+          Inutile
         </motion.div>
 
-        {/* Accept */}
+        {/* Cite */}
         <motion.div
           style={{ opacity: acceptOpacity }}
           className="
@@ -190,10 +172,10 @@ function SwipeCard({
             tracking-wider text-green-700
           "
         >
-          Accept
+          Cite
         </motion.div>
 
-        {/* Maybe */}
+        {/* Ideas */}
         <motion.div
           style={{ opacity: maybeOpacity }}
           className="
@@ -207,7 +189,7 @@ function SwipeCard({
             tracking-wider text-orange-700
           "
         >
-          Maybe
+          Ideas
         </motion.div>
       </motion.div>
     </div>

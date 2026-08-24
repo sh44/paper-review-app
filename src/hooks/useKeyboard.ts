@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+
 import type { Decision } from "../types/Paper";
 
 interface UseKeyboardProps {
@@ -11,7 +12,11 @@ export function useKeyboard({
   onUndo,
 }: UseKeyboardProps) {
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+    function handleKeyDown(event: KeyboardEvent) {
+      /*
+       * Evita di intercettare i tasti mentre
+       * l'utente sta scrivendo in un input.
+       */
       const target = event.target as HTMLElement | null;
 
       if (
@@ -22,37 +27,54 @@ export function useKeyboard({
         return;
       }
 
-      switch (event.key) {
-        case "ArrowLeft":
-          event.preventDefault();
-          onDecision("reject");
+      switch (event.key.toLowerCase()) {
+        /*
+         * Sinistra = Inutile
+         */
+        case "arrowleft":
+        case "a":
+          onDecision("inutile");
           break;
 
-        case "ArrowRight":
-          event.preventDefault();
-          onDecision("accept");
+        /*
+         * Destra = Cite
+         */
+        case "arrowright":
+        case "d":
+          onDecision("cite");
           break;
 
-        case "ArrowUp":
-        case "ArrowDown":
-          event.preventDefault();
-          onDecision("maybe");
+        /*
+         * Giù = Ideas
+         */
+        case "arrowdown":
+        case "s":
+          onDecision("ideas");
           break;
 
-        case "Backspace":
-          event.preventDefault();
+        /*
+         * Undo
+         */
+        case "z":
+        case "backspace":
           onUndo();
           break;
 
         default:
           break;
       }
-    };
+    }
 
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
     };
   }, [onDecision, onUndo]);
 }

@@ -5,7 +5,9 @@ interface DecisionFlashProps {
   decision: Decision | null;
 }
 
-function DecisionFlash({ decision }: DecisionFlashProps) {
+function DecisionFlash({
+  decision,
+}: DecisionFlashProps) {
   return (
     <AnimatePresence>
       {decision && (
@@ -21,9 +23,9 @@ function DecisionFlash({ decision }: DecisionFlashProps) {
             h-28
             blur-2xl
             ${
-              decision === "accept"
+              decision === "cite"
                 ? "bg-green-500"
-                : decision === "reject"
+                : decision === "inutile"
                 ? "bg-red-500"
                 : "bg-orange-400"
             }

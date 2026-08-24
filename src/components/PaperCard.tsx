@@ -7,22 +7,34 @@ interface PaperCardProps {
 
 function getContextStyle(context: string) {
   switch (context?.trim().toLowerCase()) {
-    case "id focus":
+    case "a - cute&co focus":
       return {
-        background: "#dbeafe",
-        border: "#60a5fa",
+        background: "#f5f5f5",
+        border: "#9ca3af",
       };
 
-    case "cute&co focus":
+    case "b - davide":
       return {
-        background: "#fce7f3",
-        border: "#f472b6",
+        background: "#efefef",
+        border: "#6b7280",
       };
 
-    case "child focus":
+    case "c - child focus":
       return {
-        background: "#dcfce7",
-        border: "#4ade80",
+        background: "#f8f8f8",
+        border: "#a3a3a3",
+      };
+
+    case "d - additional search":
+      return {
+        background: "#ececec",
+        border: "#525252",
+      };
+
+    case "e - id focus":
+      return {
+        background: "#fafafa",
+        border: "#d4d4d4",
       };
 
     default:
@@ -35,19 +47,19 @@ function getContextStyle(context: string) {
 
 function getDecisionStyle(decision?: Decision | null) {
   switch (decision) {
-    case "reject":
+    case "inutile":
       return {
         background: "#fecaca",
         border: "#ef4444",
       };
 
-    case "maybe":
+    case "ideas":
       return {
         background: "#fed7aa",
         border: "#f97316",
       };
 
-    case "accept":
+    case "cite":
       return {
         background: "#bbf7d0",
         border: "#22c55e",
@@ -62,28 +74,9 @@ function PaperCard({
   paper,
   displayDecision,
 }: PaperCardProps) {
-  /*
-   * La decisione permanente salvata sulla carta
-   * ha la precedenza.
-   *
-   * displayDecision serve solo per eventuali
-   * effetti temporanei durante lo swipe.
-   */
-  const decision =
-    paper.decision ?? displayDecision ?? null;
-
   const contextStyle = getContextStyle(paper.Context);
-  const decisionStyle = getDecisionStyle(decision);
+  const decisionStyle = getDecisionStyle(displayDecision);
 
-  /*
-   * Se esiste una decisione:
-   *   reject -> rosso
-   *   maybe  -> arancione
-   *   accept -> verde
-   *
-   * Altrimenti:
-   *   usa il colore del Context.
-   */
   const cardStyle = decisionStyle ?? contextStyle;
 
   return (
@@ -100,81 +93,26 @@ function PaperCard({
       }}
     >
       {/* Top metadata */}
-      <div
-        className="
-          relative
-          flex shrink-0
-          items-center
-          justify-between
-          px-5 pt-5
-          sm:px-7 sm:pt-7
-        "
-      >
-        {/* Series */}
-        <div
-          className="
-            max-w-[35%]
-            truncate
-            font-mono
-            text-xs
-            font-bold
-            uppercase
-            tracking-wider
-            text-black/55
-          "
-        >
+      <div className="flex shrink-0 items-center justify-between px-5 pt-5 sm:px-7 sm:pt-7">
+        <div className="max-w-[40%] truncate font-mono text-xs font-bold uppercase tracking-wider text-black/55">
           {paper.Series || ""}
         </div>
 
-        {/* Context */}
-        <div
-          className="
-            absolute
-            left-1/2
-            -translate-x-1/2
-            whitespace-nowrap
-            font-mono
-            text-xs
-            font-bold
-            uppercase
-            tracking-wider
-            text-black/55
-          "
-        >
+        <div className="absolute left-1/2 -translate-x-1/2 font-mono text-xs font-bold uppercase tracking-wider text-black/55">
           {paper.Context}
         </div>
 
-        {/* Publication year */}
-        <div
-          className="
-            font-mono
-            text-sm
-            font-bold
-            text-black/60
-          "
-        >
+        <div className="font-mono text-sm font-bold text-black/60">
           {paper["Publication Year"]}
         </div>
       </div>
 
       {/* Title */}
-      <div
-        className="
-          shrink-0
-          px-6
-          pt-5
-          text-center
-          sm:px-10
-          sm:pt-7
-        "
-      >
+      <div className="shrink-0 px-6 pt-5 text-center sm:px-10 sm:pt-7">
         <h1
           className="
-            text-xl
-            font-black
-            leading-tight
-            tracking-tight
-            text-black/85
+            text-xl font-black leading-tight
+            tracking-tight text-black/85
             sm:text-2xl
             md:text-3xl
           "
@@ -183,53 +121,19 @@ function PaperCard({
         </h1>
       </div>
 
-      {/* Manual tags */}
+      {/* Tags */}
       {paper["Manual Tags"] && (
-        <div
-          className="
-            shrink-0
-            px-6
-            pt-4
-            text-center
-            sm:px-10
-          "
-        >
-          <p
-            className="
-              text-xs
-              font-medium
-              italic
-              text-black/50
-            "
-          >
+        <div className="shrink-0 px-6 pt-4 text-center sm:px-10">
+          <p className="text-xs font-medium italic text-black/50">
             {paper["Manual Tags"]}
           </p>
         </div>
       )}
 
       {/* Abstract */}
-      <div
-        className="
-          min-h-0
-          flex-1
-          overflow-y-auto
-          px-6
-          pb-7
-          pt-5
-          sm:px-10
-        "
-      >
-        <p
-          className="
-            whitespace-pre-wrap
-            text-sm
-            leading-relaxed
-            text-black/75
-            sm:text-base
-          "
-        >
-          {paper["Abstract Note"] ||
-            "No abstract available."}
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-7 pt-5 sm:px-10">
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-black/75 sm:text-base">
+          {paper["Abstract Note"] || "No abstract available."}
         </p>
       </div>
     </article>

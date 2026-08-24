@@ -71,11 +71,18 @@ function App() {
         const papersWithDecisions =
           loadedPapers.map((paper) => ({
             ...paper,
+
+            /*
+            * Priorità:
+            *
+            * 1. decisione salvata in localStorage
+            * 2. decisione presente nel CSV
+            * 3. undefined
+            */
             decision:
-              savedState.decisions[
-                paper._index
-              ],
-          }));
+              savedState.decisions[paper._index] ??
+              paper.decision,
+        }));
 
         setPapers(
           papersWithDecisions
@@ -466,18 +473,15 @@ function App() {
             currentPaper && (
               <SwipeCard
                 /*
-                 * Ogni paper ha una nuova istanza
-                 * di SwipeCard.
-                 */
-                key={
-                  currentPaper._index
-                }
+                * Ogni paper ha una nuova istanza
+                * di SwipeCard.
+                */
+                key={currentPaper._index}
                 paper={currentPaper}
-                onDecision={
-                  handleDecision
-                }
+                onDecision={handleDecision}
+                displayDecision={currentPaper.decision}
               />
-            )}
+          )}
 
           {finished && (
             <div className="flex h-full items-center justify-center">
