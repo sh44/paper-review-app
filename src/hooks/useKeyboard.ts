@@ -13,11 +13,8 @@ export function useKeyboard({
 }: UseKeyboardProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      /*
-       * Evita di intercettare i tasti mentre
-       * l'utente sta scrivendo in un input.
-       */
-      const target = event.target as HTMLElement | null;
+      const target =
+        event.target as HTMLElement | null;
 
       if (
         target?.tagName === "INPUT" ||
@@ -37,19 +34,19 @@ export function useKeyboard({
           break;
 
         /*
-         * Destra = Cite
+         * Destra = Ideas
          */
         case "arrowright":
         case "d":
-          onDecision("cite");
+          onDecision("ideas");
           break;
 
         /*
-         * Giù = Ideas
+         * Giù = Cite
          */
         case "arrowdown":
         case "s":
-          onDecision("ideas");
+          onDecision("cite");
           break;
 
         /*

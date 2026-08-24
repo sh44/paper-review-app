@@ -47,19 +47,28 @@ function getContextStyle(context: string) {
 
 function getDecisionStyle(decision?: Decision | null) {
   switch (decision) {
+    /*
+     * INUTILE = rosso
+     */
     case "inutile":
       return {
         background: "#fecaca",
         border: "#ef4444",
       };
 
-    case "ideas":
+    /*
+     * CITE = arancione
+     */
+    case "cite":
       return {
         background: "#fed7aa",
         border: "#f97316",
       };
 
-    case "cite":
+    /*
+     * IDEAS = verde
+     */
+    case "ideas":
       return {
         background: "#bbf7d0",
         border: "#22c55e",
@@ -74,10 +83,30 @@ function PaperCard({
   paper,
   displayDecision,
 }: PaperCardProps) {
-  const contextStyle = getContextStyle(paper.Context);
-  const decisionStyle = getDecisionStyle(displayDecision);
+  const contextStyle = getContextStyle(
+    paper.Context
+  );
 
-  const cardStyle = decisionStyle ?? contextStyle;
+  /*
+   * Se viene fornita una decisione temporanea,
+   * usa quella.
+   *
+   * Altrimenti usa la decisione salvata
+   * direttamente nel paper.
+   *
+   * Questo è importante per l'UNDO:
+   *
+   * se torni indietro su una card già classificata,
+   * la card deve mantenere il proprio colore.
+   */
+  const currentDecision =
+    displayDecision ?? paper.decision;
+
+  const decisionStyle =
+    getDecisionStyle(currentDecision);
+
+  const cardStyle =
+    decisionStyle ?? contextStyle;
 
   return (
     <article
@@ -93,26 +122,67 @@ function PaperCard({
       }}
     >
       {/* Top metadata */}
-      <div className="flex shrink-0 items-center justify-between px-5 pt-5 sm:px-7 sm:pt-7">
-        <div className="max-w-[40%] truncate font-mono text-xs font-bold uppercase tracking-wider text-black/55">
+      <div
+        className="
+          flex shrink-0
+          items-center justify-between
+          px-5 pt-5
+          sm:px-7 sm:pt-7
+        "
+      >
+        <div
+          className="
+            max-w-[40%]
+            truncate
+            font-mono text-xs
+            font-bold uppercase
+            tracking-wider
+            text-black/55
+          "
+        >
           {paper.Series || ""}
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2 font-mono text-xs font-bold uppercase tracking-wider text-black/55">
+        <div
+          className="
+            absolute left-1/2
+            -translate-x-1/2
+            font-mono text-xs
+            font-bold uppercase
+            tracking-wider
+            text-black/55
+          "
+        >
           {paper.Context}
         </div>
 
-        <div className="font-mono text-sm font-bold text-black/60">
+        <div
+          className="
+            font-mono text-sm
+            font-bold
+            text-black/60
+          "
+        >
           {paper["Publication Year"]}
         </div>
       </div>
 
       {/* Title */}
-      <div className="shrink-0 px-6 pt-5 text-center sm:px-10 sm:pt-7">
+      <div
+        className="
+          shrink-0
+          px-6 pt-5
+          text-center
+          sm:px-10 sm:pt-7
+        "
+      >
         <h1
           className="
-            text-xl font-black leading-tight
-            tracking-tight text-black/85
+            text-xl
+            font-black
+            leading-tight
+            tracking-tight
+            text-black/85
             sm:text-2xl
             md:text-3xl
           "
@@ -123,17 +193,48 @@ function PaperCard({
 
       {/* Tags */}
       {paper["Manual Tags"] && (
-        <div className="shrink-0 px-6 pt-4 text-center sm:px-10">
-          <p className="text-xs font-medium italic text-black/50">
+        <div
+          className="
+            shrink-0
+            px-6 pt-4
+            text-center
+            sm:px-10
+          "
+        >
+          <p
+            className="
+              text-xs
+              font-medium
+              italic
+              text-black/50
+            "
+          >
             {paper["Manual Tags"]}
           </p>
         </div>
       )}
 
       {/* Abstract */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-7 pt-5 sm:px-10">
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-black/75 sm:text-base">
-          {paper["Abstract Note"] || "No abstract available."}
+      <div
+        className="
+          min-h-0
+          flex-1
+          overflow-y-auto
+          px-6 pb-7 pt-5
+          sm:px-10
+        "
+      >
+        <p
+          className="
+            whitespace-pre-wrap
+            text-sm
+            leading-relaxed
+            text-black/75
+            sm:text-base
+          "
+        >
+          {paper["Abstract Note"] ||
+            "No abstract available."}
         </p>
       </div>
     </article>

@@ -33,19 +33,19 @@ function SwipeCard({
     [-15, 0, 15]
   );
 
-  const rejectOpacity = useTransform(
+  const inutileOpacity = useTransform(
     x,
     [-180, -60, 0],
     [1, 0.5, 0]
   );
 
-  const acceptOpacity = useTransform(
+  const ideasOpacity = useTransform(
     x,
     [0, 60, 180],
     [0, 0.5, 1]
   );
 
-  const maybeOpacity = useTransform(
+  const citeOpacity = useTransform(
     y,
     [0, 60, 180],
     [0, 0.5, 1]
@@ -59,17 +59,17 @@ function SwipeCard({
       targetX = -window.innerWidth * 1.3;
     }
 
-    if (decision === "cite") {
+    if (decision === "ideas") {
       targetX = window.innerWidth * 1.3;
     }
 
-    if (decision === "ideas") {
+    if (decision === "cite") {
       targetY = window.innerHeight * 1.3;
     }
 
     await animate(
-      decision === "ideas" ? y : x,
-      decision === "ideas" ? targetY : targetX,
+      decision === "cite" ? y : x,
+      decision === "cite" ? targetY : targetX,
       {
         duration: 0.25,
         ease: "easeOut",
@@ -104,7 +104,7 @@ function SwipeCard({
           if (Math.abs(horizontal) > 120) {
             decide(
               horizontal > 0
-                ? "cite"
+                ? "ideas"
                 : "inutile"
             );
 
@@ -112,8 +112,7 @@ function SwipeCard({
           }
 
           if (Math.abs(vertical) > 120) {
-            decide("ideas");
-
+            decide("cite");
             return;
           }
 
@@ -145,7 +144,7 @@ function SwipeCard({
 
         {/* Inutile */}
         <motion.div
-          style={{ opacity: rejectOpacity }}
+          style={{ opacity: inutileOpacity }}
           className="
             pointer-events-none
             absolute left-5 top-5
@@ -159,9 +158,9 @@ function SwipeCard({
           Inutile
         </motion.div>
 
-        {/* Cite */}
+        {/* Ideas */}
         <motion.div
-          style={{ opacity: acceptOpacity }}
+          style={{ opacity: ideasOpacity }}
           className="
             pointer-events-none
             absolute right-5 top-5
@@ -172,12 +171,12 @@ function SwipeCard({
             tracking-wider text-green-700
           "
         >
-          Cite
+          Ideas
         </motion.div>
 
-        {/* Ideas */}
+        {/* Cite */}
         <motion.div
-          style={{ opacity: maybeOpacity }}
+          style={{ opacity: citeOpacity }}
           className="
             pointer-events-none
             absolute left-1/2 top-5
@@ -189,7 +188,7 @@ function SwipeCard({
             tracking-wider text-orange-700
           "
         >
-          Ideas
+          Cite
         </motion.div>
       </motion.div>
     </div>

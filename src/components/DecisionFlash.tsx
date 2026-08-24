@@ -1,4 +1,8 @@
-import { AnimatePresence, motion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+} from "framer-motion";
+
 import type { Decision } from "../types/Paper";
 
 interface DecisionFlashProps {
@@ -23,7 +27,7 @@ function DecisionFlash({
             h-28
             blur-2xl
             ${
-              decision === "cite"
+              decision === "ideas"
                 ? "bg-green-500"
                 : decision === "inutile"
                 ? "bg-red-500"
