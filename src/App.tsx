@@ -26,7 +26,10 @@ import { useKeyboard } from "./hooks/useKeyboard";
 
 function App() {
   const [papers, setPapers] = useState<Paper[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const [loading, setLoading] =
+    useState(true);
+
   const [error, setError] =
     useState<string | null>(null);
 
@@ -41,16 +44,33 @@ function App() {
 
   /*
    * ============================================================
+   * TAG NAMES
+   * ============================================================
+   *
+   * Contiene l'elenco dei tag/categorie disponibili.
+   *
+   * ORDINE:
+   *
+   * 1. colonne già presenti nel CSV
+   * 2. nuovi tag creati dall'app
+   *
+   * L'ordine viene salvato in localStorage.
+   */
+  const [tagNames, setTagNames] =
+    useState<string[]>([]);
+
+  /*
+   * ============================================================
    * RESET
    * ============================================================
    *
-   * Cancella solo le decisioni salvate in localStorage.
+   * Cancella decisioni, tag locali e ordine dei nuovi tag.
    *
    * Il CSV originale NON viene modificato.
    */
   const handleReset = useCallback(() => {
     const confirmed = window.confirm(
-      "Vuoi cancellare tutte le decisioni salvate?"
+      "Vuoi cancellare tutte le decisioni e i tag salvati?"
     );
 
     if (!confirmed) {
@@ -69,24 +89,91 @@ function App() {
    *
    * 1. carica il CSV
    * 2. carica localStorage
-   * 3. unisce le decisioni
-   * 4. trova il primo paper non ancora classificato
+   * 3. recupera l'ordine dei tag
+   * 4. unisce CSV + modifiche locali
+   * 5. trova il primo paper senza decisione
    */
   useEffect(() => {
     async function initialize() {
       try {
-        const loadedPapers =
-          await loadPapers();
+        const {
+          papers: loadedPapers,
+          csvTagNames,
+        } = await loadPapers();
 
         const savedState =
           loadSavedState();
 
+        /*
+         * ========================================================
+         * ORDINE DEI TAG
+         * ========================================================
+         *
+         * Prima manteniamo l'ordine delle colonne
+         * presenti nel CSV.
+         *
+         * Poi aggiungiamo eventuali tag creati
+         * precedentemente nell'app.
+         */
+        const initialTagNames = [
+          ...csvTagNames,
+        ];
+
+        for (
+          const tag of savedState.tagNames
+        ) {
+          if (
+            !initialTagNames.includes(tag)
+          ) {
+            initialTagNames.push(tag);
+          }
+        }
+
+        /*
+         * ========================================================
+         * MERGE CSV + LOCALSTORAGE
+         * ========================================================
+         *
+         * Regola:
+         *
+         * CSV
+         *   ↓
+         * tag iniziali
+         *   ↓
+         * localStorage sovrascrive
+         *   ↓
+         * stato finale dell'app
+         *
+         * Quindi se il CSV dice:
+         *
+         * AI = 1
+         *
+         * e localStorage dice:
+         *
+         * AI = false
+         *
+         * il risultato sarà false.
+         */
         const papersWithDecisions =
           loadedPapers.map((paper) => {
             const localDecision =
               savedState.decisions[
-                paper._index
+              paper._index
               ];
+
+            const csvTags =
+              paper.tags ?? {};
+
+            const localTags =
+              savedState.tags[
+              paper._index
+              ] ?? {};
+
+            const mergedTags:
+              Record<string, boolean> = {
+              ...csvTags,
+              ...localTags,
+            };
 
             return {
               ...paper,
@@ -95,60 +182,86 @@ function App() {
                 localDecision ??
                 paper.decision,
 
-              // SOLO DEBUG
-              _csvDecision: paper.decision,
-              _localDecision: localDecision,
+              tags: mergedTags,
             };
           });
 
+        /*
+         * ========================================================
+         * DEBUG
+         * ========================================================
+         */
+        console.log(
+          "=== TAGS ==="
+        );
+
+        console.log(
+          "CSV tags:",
+          csvTagNames
+        );
+
+        console.log(
+          "Saved tag names:",
+          savedState.tagNames
+        );
+
+        console.log(
+          "Final tag order:",
+          initialTagNames
+        );
+
         console.table(
-          papersWithDecisions.map((paper) => ({
-            index: paper._index,
-            title: paper.Title,
-            csv: paper._csvDecision,
-            local: paper._localDecision,
-            final: paper.decision,
-          }))
+          papersWithDecisions.map(
+            (paper) => ({
+              index:
+                paper._index,
+
+              title:
+                paper.Title,
+
+              decision:
+                paper.decision,
+
+              tags: Object.keys(
+                paper.tags ?? {}
+              )
+                .filter(
+                  (tag) =>
+                    paper.tags?.[tag]
+                )
+                .join(", "),
+            })
+          )
+        );
+
+        /*
+         * ========================================================
+         * SALVA STATO
+         * ========================================================
+         *
+         * Salviamo l'ordine finale dei tag.
+         *
+         * Questo è importante soprattutto per i nuovi tag
+         * creati nell'app.
+         */
+        saveState({
+          ...savedState,
+          tagNames:
+            initialTagNames,
+        });
+
+        setTagNames(
+          initialTagNames
         );
 
         setPapers(
           papersWithDecisions
         );
 
-        console.log("=== STATS DEBUG ===");
-
-        console.log(
-          "inutile:",
-          papersWithDecisions.filter(
-            (paper) => paper.decision === "inutile"
-          ).length
-        );
-
-        console.log(
-          "cite:",
-          papersWithDecisions.filter(
-            (paper) => paper.decision === "cite"
-          ).length
-        );
-
-        console.log(
-          "ideas:",
-          papersWithDecisions.filter(
-            (paper) => paper.decision === "ideas"
-          ).length
-        );
-
-        console.log(
-          "totale:",
-          papersWithDecisions.filter(
-            (paper) =>
-              paper.decision === "inutile" ||
-              paper.decision === "cite" ||
-              paper.decision === "ideas"
-          ).length
-        );
         /*
-         * Trova il primo paper senza decisione.
+         * ========================================================
+         * TROVA PRIMO PAPER NON DECISO
+         * ========================================================
          */
         const firstUndecidedIndex =
           papersWithDecisions.findIndex(
@@ -186,6 +299,11 @@ function App() {
     initialize();
   }, []);
 
+  /*
+   * ============================================================
+   * CURRENT PAPER
+   * ============================================================
+   */
   const currentPaper =
     papers[currentIndex];
 
@@ -224,50 +342,26 @@ function App() {
    * ============================================================
    * DECISION STATS
    * ============================================================
-   *
-   * Le stats vengono calcolate sullo stato effettivo dell'app:
-   *
-   *   CSV
-   *     ↓
-   * decisione presente nel CSV
-   *     ↓
-   * localStorage sovrascrive eventualmente quella decisione
-   *     ↓
-   * stato finale visualizzato
-   *
-   * Quindi:
-   *
-   * CSV:
-   *   18 inutile
-   *   21 cite
-   *   18 ideas
-   *
-   * + eventuali modifiche locali
-   *
-   * = stats attuali dell'app
-  */
+   */
   const decisionStats = useMemo(() => {
-    const inutileCount = papers.filter(
-      (paper) => paper.decision === "inutile"
-    ).length;
+    const inutileCount =
+      papers.filter(
+        (paper) =>
+          paper.decision === "inutile"
+      ).length;
 
-    const citeCount = papers.filter(
-      (paper) => paper.decision === "cite"
-    ).length;
+    const citeCount =
+      papers.filter(
+        (paper) =>
+          paper.decision === "cite"
+      ).length;
 
-    const ideasCount = papers.filter(
-      (paper) => paper.decision === "ideas"
-    ).length;
+    const ideasCount =
+      papers.filter(
+        (paper) =>
+          paper.decision === "ideas"
+      ).length;
 
-  /*
-    * IMPORTANTISSIMO:
-    *
-    * Il totale è la somma delle tre decisioni valide.
-    *
-    * In questo modo eventuali valori vecchi
-    * come "accept", "reject", "maybe" non
-    * falsano il denominatore.
-  */
     const total =
       inutileCount +
       citeCount +
@@ -307,20 +401,228 @@ function App() {
 
   /*
    * ============================================================
+   * ADD TAG
+   * ============================================================
+   *
+   * Crea un nuovo tag.
+   *
+   * Il confronto è case-sensitive:
+   *
+   * "HCI"
+   * "hci"
+   *
+   * sono considerati due tag diversi.
+   */
+  const handleAddTag =
+    useCallback(
+      (tagName: string) => {
+        const normalized =
+          tagName.trim();
+
+        if (!normalized) {
+          return;
+        }
+
+        /*
+         * Non creare duplicati.
+         */
+        if (
+          tagNames.includes(
+            normalized
+          )
+        ) {
+          return;
+        }
+
+        /*
+         * ========================================================
+         * AGGIUNGE IL TAG ALL'ELENCO
+         * ========================================================
+         *
+         * Il nuovo tag viene aggiunto IN FONDO.
+         */
+        const nextTagNames = [
+          ...tagNames,
+          normalized,
+        ];
+
+        setTagNames(
+          nextTagNames
+        );
+
+        /*
+         * ========================================================
+         * AGGIUNGE IL TAG A TUTTI I PAPER
+         * ========================================================
+         *
+         * Il valore iniziale è false.
+         */
+        setPapers(
+          (previousPapers) =>
+            previousPapers.map(
+              (paper) => ({
+                ...paper,
+
+                tags: {
+                  ...(paper.tags ??
+                    {}),
+                  [normalized]:
+                    false,
+                },
+              })
+            )
+        );
+
+        /*
+         * ========================================================
+         * PERSISTENZA
+         * ========================================================
+         */
+        const savedState =
+          loadSavedState();
+
+        if (
+          !savedState.tagNames.includes(
+            normalized
+          )
+        ) {
+          savedState.tagNames.push(
+            normalized
+          );
+        }
+
+        saveState(
+          savedState
+        );
+      },
+      [tagNames]
+    );
+
+  /*
+   * ============================================================
+   * TOGGLE TAG
+   * ============================================================
+   *
+   * Cambia il valore del tag del paper corrente.
+   *
+   * false → true
+   * true  → false
+   */
+  const handleToggleTag =
+    useCallback(
+      (tagName: string) => {
+        const paper =
+          papers[currentIndex];
+
+        if (!paper) {
+          return;
+        }
+
+        const currentValue =
+          paper.tags?.[
+          tagName
+          ] ?? false;
+
+        const nextValue =
+          !currentValue;
+
+        /*
+         * ========================================================
+         * AGGIORNA UI
+         * ========================================================
+         */
+        setPapers(
+          (previousPapers) =>
+            previousPapers.map(
+              (
+                existingPaper,
+                index
+              ) =>
+                index ===
+                  currentIndex
+                  ? {
+                    ...existingPaper,
+
+                    tags: {
+                      ...(existingPaper.tags ??
+                        {}),
+                      [tagName]:
+                        nextValue,
+                    },
+                  }
+                  : existingPaper
+            )
+        );
+
+        /*
+         * ========================================================
+         * AGGIORNA LOCALSTORAGE
+         * ========================================================
+         */
+        const savedState =
+          loadSavedState();
+
+        if (
+          !savedState.tags[
+          paper._index
+          ]
+        ) {
+          savedState.tags[
+            paper._index
+          ] = {};
+        }
+
+        savedState.tags[
+          paper._index
+        ][tagName] =
+          nextValue;
+
+        /*
+         * Se per qualsiasi motivo il tag non è
+         * ancora nell'elenco globale, aggiungilo.
+         */
+        if (
+          !savedState.tagNames.includes(
+            tagName
+          )
+        ) {
+          savedState.tagNames.push(
+            tagName
+          );
+        }
+
+        saveState(
+          savedState
+        );
+
+        /*
+         * Mantiene sincronizzato anche lo stato React.
+         */
+        setTagNames(
+          (previousTags) =>
+            previousTags.includes(
+              tagName
+            )
+              ? previousTags
+              : [
+                ...previousTags,
+                tagName,
+              ]
+        );
+      },
+      [currentIndex, papers]
+    );
+
+  /*
+   * ============================================================
    * RIPRENDI
    * ============================================================
    *
-   * Cerca SEMPRE il primo paper senza decisione.
+   * Cerca il primo paper senza decisione.
    *
-   * Esempio:
-   *
-   * 1-100  -> decisione
-   * 101    -> vuoto
-   *
-   * "Riprendi" porta a 101.
-   *
-   * Questo funziona anche se l'utente è tornato indietro
-   * con Undo.
+   * I tag NON vengono considerati:
+   * un paper può avere tag ma essere ancora
+   * privo di una decisione.
    */
   const handleResume = useCallback(() => {
     const firstUndecidedIndex =
@@ -332,9 +634,6 @@ function App() {
     if (
       firstUndecidedIndex === -1
     ) {
-      /*
-       * Tutti i paper sono classificati.
-       */
       setCurrentIndex(
         papers.length
       );
@@ -356,14 +655,23 @@ function App() {
     papers.length === 0
       ? 0
       : Math.min(
-          currentIndex + 1,
-          papers.length
-        );
+        currentIndex + 1,
+        papers.length
+      );
 
   /*
    * ============================================================
    * DECISION
    * ============================================================
+   *
+   * La decisione viene salvata insieme ai tag
+   * correnti del paper.
+   *
+   * Questo è importante perché:
+   *
+   * 1. selezioni dei tag
+   * 2. fai swipe
+   * 3. decisione + tag vengono persistiti
    */
   const handleDecision =
     useCallback(
@@ -376,13 +684,9 @@ function App() {
         }
 
         /*
-         * Aggiorna la lista dei paper.
-         *
-         * Questo aggiorna automaticamente:
-         * - card
-         * - counter
-         * - progress
-         * - stats
+         * ========================================================
+         * AGGIORNA PAPER NELLO STATO REACT
+         * ========================================================
          */
         setPapers(
           (previousPapers) =>
@@ -391,32 +695,58 @@ function App() {
                 existingPaper,
                 index
               ) =>
-                index === currentIndex
+                index ===
+                  currentIndex
                   ? {
-                      ...existingPaper,
-                      decision,
-                    }
+                    ...existingPaper,
+
+                    decision,
+                  }
                   : existingPaper
             )
         );
 
         /*
-         * Stato persistente.
+         * ========================================================
+         * CARICA STATO PERSISTENTE
+         * ========================================================
          */
         const savedState =
           loadSavedState();
 
         /*
-         * Salva / sovrascrive
-         * la decisione del paper.
+         * ========================================================
+         * SALVA DECISIONE
+         * ========================================================
          */
         savedState.decisions[
           paper._index
         ] = decision;
 
         /*
-         * Aggiunge alla history
-         * evitando duplicati.
+         * ========================================================
+         * SALVA TAG DEL PAPER
+         * ========================================================
+         *
+         * Copia completa dello stato dei tag
+         * del paper al momento dello swipe.
+         */
+        savedState.tags[
+          paper._index
+        ] = {
+          ...(paper.tags ??
+            {}),
+        };
+
+        /*
+         * ========================================================
+         * HISTORY
+         * ========================================================
+         *
+         * La history serve a ricordare quali paper
+         * sono stati processati.
+         *
+         * Evitiamo duplicati.
          */
         if (
           !savedState.history.includes(
@@ -429,21 +759,33 @@ function App() {
         }
 
         /*
-         * Salvataggio immediato.
+         * ========================================================
+         * SALVA
+         * ========================================================
          */
-        saveState(savedState);
+        saveState(
+          savedState
+        );
 
         /*
-         * Feedback visivo.
+         * ========================================================
+         * FEEDBACK VISIVO
+         * ========================================================
          */
-        setLastDecision(decision);
+        setLastDecision(
+          decision
+        );
 
         window.setTimeout(() => {
-          setLastDecision(null);
+          setLastDecision(
+            null
+          );
         }, 450);
 
         /*
-         * Passa alla card successiva.
+         * ========================================================
+         * PASSA AL PAPER SUCCESSIVO
+         * ========================================================
          */
         setCurrentIndex(
           (index) =>
@@ -461,16 +803,20 @@ function App() {
    * UNDO
    * ============================================================
    *
-   * L'undo NON cancella la decisione.
+   * IMPORTANTISSIMO:
    *
-   * Quindi:
+   * Undo NON modifica localStorage.
    *
-   * - la card precedente mostra ancora il colore
-   * - le stats rimangono invariate
-   * - il counter torna indietro
+   * Quindi tornando indietro:
    *
-   * Questo permette di rivedere una card senza
-   * perdere la classificazione già effettuata.
+   * - la decisione rimane
+   * - i tag rimangono
+   * - il paper mostra lo stato precedente
+   * - le stats rimangono corrette
+   *
+   * Se poi fai di nuovo swipe sullo stesso paper,
+   * la nuova decisione/tag state sovrascriverà
+   * quella precedente.
    */
   const handleUndo =
     useCallback(() => {
@@ -487,6 +833,16 @@ function App() {
    * ============================================================
    * EXPORT CSV
    * ============================================================
+   *
+   * Passiamo:
+   *
+   * - papers
+   * - decisioni locali
+   * - tag locali
+   * - ordine esplicito dei tag
+   *
+   * In questo modo l'export mantiene l'ordine desiderato
+   * delle colonne.
    */
   const handleExport =
     useCallback(async () => {
@@ -495,11 +851,16 @@ function App() {
 
       await exportPapersToCsv(
         papers,
-        savedState.decisions
+        savedState.decisions,
+        savedState.tags,
+        tagNames
       );
 
       setMenuOpen(false);
-    }, [papers]);
+    }, [
+      papers,
+      tagNames,
+    ]);
 
   /*
    * ============================================================
@@ -565,6 +926,11 @@ function App() {
     );
   }
 
+  /*
+   * ============================================================
+   * FINISHED
+   * ============================================================
+   */
   const finished =
     currentIndex >= papers.length;
 
@@ -629,7 +995,9 @@ function App() {
               hover:bg-white/10
             "
             aria-label="Menu"
-            aria-expanded={menuOpen}
+            aria-expanded={
+              menuOpen
+            }
           >
             ⋮
           </button>
@@ -678,13 +1046,15 @@ function App() {
                       text-white/35
                     "
                   >
-                    {decisionStats.total}{" "}
+                    {
+                      decisionStats.total
+                    }{" "}
                     valutati
                   </span>
                 </div>
 
                 {decisionStats.total >
-                0 ? (
+                  0 ? (
                   <>
                     {/* Barra 100% */}
                     <div
@@ -700,50 +1070,50 @@ function App() {
                       {/* Inutile */}
                       {decisionStats.inutile >
                         0 && (
-                        <div
-                          className="
+                          <div
+                            className="
                             h-full
                             bg-red-300
                             transition-all
                             duration-300
                           "
-                          style={{
-                            width: `${decisionStats.inutile}%`,
-                          }}
-                        />
-                      )}
+                            style={{
+                              width: `${decisionStats.inutile}%`,
+                            }}
+                          />
+                        )}
 
                       {/* Cite */}
                       {decisionStats.cite >
                         0 && (
-                        <div
-                          className="
+                          <div
+                            className="
                             h-full
                             bg-orange-300
                             transition-all
                             duration-300
                           "
-                          style={{
-                            width: `${decisionStats.cite}%`,
-                          }}
-                        />
-                      )}
+                            style={{
+                              width: `${decisionStats.cite}%`,
+                            }}
+                          />
+                        )}
 
                       {/* Ideas */}
                       {decisionStats.ideas >
                         0 && (
-                        <div
-                          className="
+                          <div
+                            className="
                             h-full
                             bg-green-300
                             transition-all
                             duration-300
                           "
-                          style={{
-                            width: `${decisionStats.ideas}%`,
-                          }}
-                        />
-                      )}
+                            style={{
+                              width: `${decisionStats.ideas}%`,
+                            }}
+                          />
+                        )}
                     </div>
 
                     {/* Legenda */}
@@ -791,9 +1161,14 @@ function App() {
                             text-white/70
                           "
                         >
-                          {decisionStats.inutile.toFixed(1)}%
+                          {decisionStats.inutile.toFixed(
+                            1
+                          )}
+                          %
                           {"|"}
-                          {decisionStats.inutileCount}
+                          {
+                            decisionStats.inutileCount
+                          }
                         </div>
                       </div>
 
@@ -834,9 +1209,14 @@ function App() {
                             text-white/70
                           "
                         >
-                          {decisionStats.cite.toFixed(1)}%
+                          {decisionStats.cite.toFixed(
+                            1
+                          )}
+                          %
                           {"|"}
-                          {decisionStats.citeCount}
+                          {
+                            decisionStats.citeCount
+                          }
                         </div>
                       </div>
 
@@ -877,9 +1257,14 @@ function App() {
                             text-white/70
                           "
                         >
-                          {decisionStats.ideas.toFixed(1)}%
+                          {decisionStats.ideas.toFixed(
+                            1
+                          )}
+                          %
                           {"|"}
-                          {decisionStats.ideasCount}
+                          {
+                            decisionStats.ideasCount
+                          }
                         </div>
                       </div>
                     </div>
@@ -1053,18 +1438,13 @@ function App() {
           {!finished &&
             currentPaper && (
               <SwipeCard
-                key={
-                  currentPaper._index
-                }
-                paper={
-                  currentPaper
-                }
-                onDecision={
-                  handleDecision
-                }
-                displayDecision={
-                  currentPaper.decision
-                }
+                key={currentPaper._index}
+                paper={currentPaper}
+                onDecision={handleDecision}
+                displayDecision={currentPaper.decision}
+                tagNames={tagNames}
+                onToggleTag={handleToggleTag}
+                onAddTag={handleAddTag}
               />
             )}
 

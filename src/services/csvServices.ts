@@ -1,65 +1,201 @@
 import Papa from "papaparse";
 import type { ParseResult } from "papaparse";
-import type { Decision, Paper } from "../types/Paper";
+import type {
+  Decision,
+  Paper,
+} from "../types/Paper";
 
-export function loadPapers(): Promise<Paper[]> {
-  return new Promise((resolve, reject) => {
-    const csvUrl = `${import.meta.env.BASE_URL}papers.csv`;
+/*
+ * Colonne che NON devono essere considerate tag.
+ *
+ * Tutte le altre colonne presenti nel CSV
+ * possono diventare categorie/tag.
+ */
+const RESERVED_COLUMNS =
+  new Set([
+    "Context",
+    "Item Type",
+    "Publication Year",
+    "Author",
+    "Title",
+    "DOI",
+    "Url",
+    "Abstract Note",
+    "Series",
+    "Publisher",
+    "Manual Tags",
+    "Source",
+    "_index",
+    "decision",
+  ]);
 
-    console.log("Loading CSV from:", csvUrl);
+export interface LoadedPapers {
+  papers: Paper[];
 
-    Papa.parse<Record<string, string>>(csvUrl, {
-      header: true,
-      skipEmptyLines: true,
-      download: true,
+  /*
+   * Nomi delle colonne-tag del CSV,
+   * nello stesso ordine in cui compaiono
+   * nel file CSV.
+   */
+  csvTagNames: string[];
+}
 
-      complete: (
-        results: ParseResult<Record<string, string>>
-      ) => {
-        console.log("CSV loaded:", results.data.length, "rows");
+export function loadPapers(): Promise<LoadedPapers> {
+  return new Promise(
+    (resolve, reject) => {
+      const csvUrl =
+        `${import.meta.env.BASE_URL}papers.csv`;
 
-        try {
-          const papers: Paper[] = results.data.map(
-            (row, index) => {
-              const parsedIndex = Number(row._index);
+      console.log(
+        "Loading CSV from:",
+        csvUrl
+      );
 
-              const paperIndex = Number.isFinite(parsedIndex)
-                ? parsedIndex
-                : index;
+      Papa.parse<
+        Record<string, string>
+      >(csvUrl, {
+        header: true,
+        skipEmptyLines: true,
+        download: true,
 
-              const csvDecision = row.decision;
-
-              const decision: Decision | undefined =
-                csvDecision === "inutile" ||
-                csvDecision === "cite" ||
-                csvDecision === "ideas"
-                  ? csvDecision
-                  : undefined;
-
-              return {
-                ...row,
-                _index: paperIndex,
-                decision,
-              } as Paper;
-            }
+        complete: (
+          results: ParseResult<
+            Record<string, string>
+          >
+        ) => {
+          console.log(
+            "CSV loaded:",
+            results.data.length,
+            "rows"
           );
 
-          resolve(papers);
-        } catch (error) {
-          reject(error);
-        }
-      },
+          try {
+            /*
+             * Tutte le colonne presenti
+             * nel CSV.
+             */
+            const fields =
+              results.meta.fields ??
+              [];
 
-      error: (error) => {
-        console.error("CSV loading error:", error);
-        console.error("CSV URL:", csvUrl);
+            /*
+             * Le colonne non riservate
+             * diventano tag.
+             *
+             * L'ordine viene mantenuto
+             * esattamente come nel CSV.
+             */
+            const csvTagNames =
+              fields.filter(
+                (field) =>
+                  !RESERVED_COLUMNS.has(
+                    field
+                  )
+              );
 
-        reject(
-          new Error(
-            `Impossibile caricare papers.csv da ${csvUrl}`
-          )
-        );
-      },
-    });
-  });
+            console.log(
+              "Tag columns:",
+              csvTagNames
+            );
+
+            const papers: Paper[] =
+              results.data.map(
+                (
+                  row,
+                  index
+                ) => {
+                  /*
+                   * Indice originale del CSV.
+                   */
+                  const parsedIndex =
+                    Number(
+                      row._index
+                    );
+
+                  const paperIndex =
+                    Number.isFinite(
+                      parsedIndex
+                    )
+                      ? parsedIndex
+                      : index;
+
+                  /*
+                   * Decisione presente
+                   * nel CSV.
+                   */
+                  const csvDecision =
+                    row.decision;
+
+                  const decision:
+                    | Decision
+                    | undefined =
+                    csvDecision ===
+                      "inutile" ||
+                    csvDecision ===
+                      "cite" ||
+                    csvDecision ===
+                      "ideas"
+                      ? csvDecision
+                      : undefined;
+
+                  /*
+                   * Legge i tag dal CSV.
+                   *
+                   * "1" -> true
+                   * qualsiasi altra cosa -> false
+                   */
+                  const tags: Record<
+                    string,
+                    boolean
+                  > = {};
+
+                  for (
+                    const tag of csvTagNames
+                  ) {
+                    tags[tag] =
+                      row[tag] === "1";
+                  }
+
+                  return {
+                    ...row,
+
+                    _index:
+                      paperIndex,
+
+                    decision,
+
+                    tags,
+                  } as Paper;
+                }
+              );
+
+            resolve({
+              papers,
+              csvTagNames,
+            });
+          } catch (error) {
+            reject(error);
+          }
+        },
+
+        error: (error) => {
+          console.error(
+            "CSV loading error:",
+            error
+          );
+
+          console.error(
+            "CSV URL:",
+            csvUrl
+          );
+
+          reject(
+            new Error(
+              `Impossibile caricare papers.csv da ${csvUrl}`
+            )
+          );
+        },
+      });
+    }
+  );
 }

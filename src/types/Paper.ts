@@ -19,4 +19,7 @@ export interface Paper {
 
   // decisione eventualmente già salvata
   decision?: Decision;
+
+  // tags selezionati
+  tags?: Record<string, boolean>;
 }

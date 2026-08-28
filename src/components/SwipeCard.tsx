@@ -15,12 +15,18 @@ interface SwipeCardProps {
   paper: Paper;
   onDecision: (decision: Decision) => void;
   displayDecision?: Decision | null;
+  tagNames: string[];
+  onToggleTag: (tagName: string) => void;
+  onAddTag: (tagName: string) => void;
 }
 
 function SwipeCard({
   paper,
   onDecision,
   displayDecision,
+  tagNames,
+  onToggleTag,
+  onAddTag,
 }: SwipeCardProps) {
   const isTouchDevice = useIsTouchDevice();
 
@@ -79,6 +85,14 @@ function SwipeCard({
     onDecision(decision);
   };
 
+  const handleAddTag = () => {
+    const value = window.prompt("Nome della nuova categoria:");
+    if (!value) {
+      return;
+    }
+    onAddTag(value);
+  };
+
   return (
     <div className="relative h-full w-full">
       <motion.div
@@ -130,10 +144,9 @@ function SwipeCard({
         }}
         className={`
           absolute inset-0
-          ${
-            isTouchDevice
-              ? "cursor-grab active:cursor-grabbing"
-              : ""
+          ${isTouchDevice
+            ? "cursor-grab active:cursor-grabbing"
+            : ""
           }
         `}
       >
@@ -190,6 +203,120 @@ function SwipeCard({
         >
           Cite
         </motion.div>
+
+        {/* Tags */}
+        <div
+          className="
+            pointer-events-auto
+            absolute bottom-4
+            left-4
+            right-4
+            z-20
+            rounded-sm
+            border
+            border-white/15
+            bg-[#202020]/90
+            p-3
+            shadow-lg
+            backdrop-blur
+          "
+          onPointerDown={(event) => {
+            /* Impedisce che un click/touch sui tag venga interpretato come inizio dello swipe. */
+            event.stopPropagation();
+          }}
+          onTouchStart={(event) => {
+            event.stopPropagation();
+          }}
+        >
+
+          <div
+            className="
+              mb-2
+              flex
+              items-center
+              justify-between
+            "
+          >
+            <span
+              className="
+                font-mono
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-wide
+                text-white/40
+              "
+            >
+              Categorie
+            </span>
+
+            <button type="button" onClick={handleAddTag}
+              className="
+                border
+                border-white/15
+                px-2
+                py-1
+                font-mono
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-wide
+                text-white/50
+                transition
+                hover:bg-white/10
+                hover:text-white/80
+              "
+            >
+              + Nuova
+            </button>
+          </div>
+          <div
+            className="
+              flex max-h-20
+              flex-wrap
+              gap-1.5
+              overflow-y-auto
+            "
+          >
+            {tagNames.length === 0 ? (
+              <span
+                className="
+                  font-mono
+                  text-[10px]
+                  text-white/30
+                "
+              >
+                Nessuna categoria
+              </span>
+            ) : (
+              tagNames.map((tagName) => {
+                const selected = paper.tags?.[tagName] ?? false;
+                return (
+                  <button
+                    key={tagName}
+                    type="button"
+                    onClick={() => onToggleTag(tagName)}
+                    className={`
+                      border
+                      px-2.5
+                      py-1.5
+                      font-mono
+                      text-[10px]
+                      font-bold
+                      transition
+                      ${selected
+                        ? "border-white/50 bg-white/20 text-white"
+                        : "border-white/10 bg-white/5 text-white/45 hover:bg-white/10 hover:text-white/70"
+                      }
+                    `}
+                  >
+                    {tagName}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
       </motion.div>
     </div>
   );
