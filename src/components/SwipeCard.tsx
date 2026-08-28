@@ -5,7 +5,10 @@ import {
   animate,
 } from "framer-motion";
 
-import type { Paper, Decision } from "../types/Paper";
+import type {
+  Paper,
+  Decision,
+} from "../types/Paper";
 
 import PaperCard from "./PaperCard";
 
@@ -28,7 +31,8 @@ function SwipeCard({
   onToggleTag,
   onAddTag,
 }: SwipeCardProps) {
-  const isTouchDevice = useIsTouchDevice();
+  const isTouchDevice =
+    useIsTouchDevice();
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -57,25 +61,32 @@ function SwipeCard({
     [0, 0.5, 1]
   );
 
-  const decide = async (decision: Decision) => {
+  const decide = async (
+    decision: Decision
+  ) => {
     let targetX = 0;
     let targetY = 0;
 
     if (decision === "inutile") {
-      targetX = -window.innerWidth * 1.3;
+      targetX =
+        -window.innerWidth * 1.3;
     }
 
     if (decision === "ideas") {
-      targetX = window.innerWidth * 1.3;
+      targetX =
+        window.innerWidth * 1.3;
     }
 
     if (decision === "cite") {
-      targetY = window.innerHeight * 1.3;
+      targetY =
+        window.innerHeight * 1.3;
     }
 
     await animate(
       decision === "cite" ? y : x,
-      decision === "cite" ? targetY : targetX,
+      decision === "cite"
+        ? targetY
+        : targetX,
       {
         duration: 0.25,
         ease: "easeOut",
@@ -86,10 +97,14 @@ function SwipeCard({
   };
 
   const handleAddTag = () => {
-    const value = window.prompt("Nome della nuova categoria:");
+    const value = window.prompt(
+      "Nome della nuova categoria:"
+    );
+
     if (!value) {
       return;
     }
+
     onAddTag(value);
   };
 
@@ -110,12 +125,20 @@ function SwipeCard({
         }}
         dragElastic={1}
         onDragEnd={(_, info) => {
-          if (!isTouchDevice) return;
+          if (!isTouchDevice) {
+            return;
+          }
 
-          const horizontal = info.offset.x;
-          const vertical = info.offset.y;
+          const horizontal =
+            info.offset.x;
 
-          if (Math.abs(horizontal) > 120) {
+          const vertical =
+            info.offset.y;
+
+          if (
+            Math.abs(horizontal) >
+            120
+          ) {
             decide(
               horizontal > 0
                 ? "ideas"
@@ -125,8 +148,12 @@ function SwipeCard({
             return;
           }
 
-          if (Math.abs(vertical) > 120) {
+          if (
+            Math.abs(vertical) >
+            120
+          ) {
             decide("cite");
+
             return;
           }
 
@@ -152,12 +179,16 @@ function SwipeCard({
       >
         <PaperCard
           paper={paper}
-          displayDecision={displayDecision}
+          displayDecision={
+            displayDecision
+          }
         />
 
         {/* Inutile */}
         <motion.div
-          style={{ opacity: inutileOpacity }}
+          style={{
+            opacity: inutileOpacity,
+          }}
           className="
             pointer-events-none
             absolute left-5 top-5
@@ -173,7 +204,9 @@ function SwipeCard({
 
         {/* Ideas */}
         <motion.div
-          style={{ opacity: ideasOpacity }}
+          style={{
+            opacity: ideasOpacity,
+          }}
           className="
             pointer-events-none
             absolute right-5 top-5
@@ -189,7 +222,9 @@ function SwipeCard({
 
         {/* Cite */}
         <motion.div
-          style={{ opacity: citeOpacity }}
+          style={{
+            opacity: citeOpacity,
+          }}
           className="
             pointer-events-none
             absolute left-1/2 top-5
@@ -209,113 +244,83 @@ function SwipeCard({
           className="
             pointer-events-auto
             absolute bottom-4
-            left-4
-            right-4
+            left-4 right-4
             z-20
-            rounded-sm
-            border
-            border-white/15
-            bg-[#202020]/90
-            p-3
-            shadow-lg
-            backdrop-blur
+            flex max-h-20
+            flex-wrap
+            items-center
+            gap-1.5
+            overflow-y-auto
           "
           onPointerDown={(event) => {
-            /* Impedisce che un click/touch sui tag venga interpretato come inizio dello swipe. */
+            /*
+             * Impedisce che un click/touch sui tag
+             * venga interpretato come inizio dello swipe.
+             */
             event.stopPropagation();
           }}
           onTouchStart={(event) => {
             event.stopPropagation();
           }}
         >
+          {tagNames.map(
+            (tagName) => {
+              const selected =
+                paper.tags?.[
+                tagName
+                ] ?? false;
 
-          <div
-            className="
-              mb-2
-              flex
-              items-center
-              justify-between
-            "
-          >
-            <span
-              className="
-                font-mono
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-wide
-                text-white/40
-              "
-            >
-              Categorie
-            </span>
+              return (
+                <button
+                  key={tagName}
+                  type="button"
+                  onClick={() =>
+                    onToggleTag(
+                      tagName
+                    )
+                  }
+                  className={`
+                    border
+                    px-2.5
+                    py-1.5
+                    font-mono
+                    text-[10px]
+                    font-bold
+                    transition
+                    ${selected
+                      ? "border-white/50 bg-white/20 text-white"
+                      : "border-white/15 bg-[#252525]/95 text-white/60 hover:bg-[#303030] hover:text-white/90"
+                    }
+                  `}
+                >
+                  {tagName}
+                </button>
+              );
+            }
+          )}
 
-            <button type="button" onClick={handleAddTag}
-              className="
-                border
-                border-white/15
-                px-2
-                py-1
-                font-mono
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-wide
-                text-white/50
-                transition
-                hover:bg-white/10
-                hover:text-white/80
-              "
-            >
-              + Nuova
-            </button>
-          </div>
-          <div
+          {/* Nuovo tag */}
+          <button
+            type="button"
+            onClick={handleAddTag}
             className="
-              flex max-h-20
-              flex-wrap
-              gap-1.5
-              overflow-y-auto
+              border
+              border-white/15
+              bg-[#252525]/95
+              px-2.5
+              py-1.5
+              font-mono
+              text-[10px]
+              font-bold
+              text-white/60
+              transition
+              hover:bg-[#303030]
+              hover:text-white/90
             "
+            aria-label="Nuova categoria"
           >
-            {tagNames.length === 0 ? (
-              <span
-                className="
-                  font-mono
-                  text-[10px]
-                  text-white/30
-                "
-              >
-                Nessuna categoria
-              </span>
-            ) : (
-              tagNames.map((tagName) => {
-                const selected = paper.tags?.[tagName] ?? false;
-                return (
-                  <button
-                    key={tagName}
-                    type="button"
-                    onClick={() => onToggleTag(tagName)}
-                    className={`
-                      border
-                      px-2.5
-                      py-1.5
-                      font-mono
-                      text-[10px]
-                      font-bold
-                      transition
-                      ${selected
-                        ? "border-white/50 bg-white/20 text-white"
-                        : "border-white/10 bg-white/5 text-white/45 hover:bg-white/10 hover:text-white/70"
-                      }
-                    `}
-                  >
-                    {tagName}
-                  </button>
-                );
-              })
-            )}
-          </div>
+            +
+          </button>
         </div>
       </motion.div>
     </div>
