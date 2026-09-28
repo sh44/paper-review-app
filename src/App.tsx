@@ -42,6 +42,15 @@ function App() {
   const [menuOpen, setMenuOpen] =
     useState(false);
 
+  const contexts = [
+    "A - Davide",
+    "B - child focus",
+    "C - ID focus",
+    "D - additional search",
+    "E - cute&co focus",
+  ];
+
+
   /*
    * ============================================================
    * TAG NAMES
@@ -648,6 +657,60 @@ function App() {
 
   /*
    * ============================================================
+   * SALTA A CONTEXT *
+   * ============================================================
+   *
+   * Cerca il primo paper appartenente al Context che non ha ancora una decisione.
+   */
+
+  const handleGoToContext =
+   useCallback(
+      (context: string) => {
+        const targetIndex = papers.findIndex(
+          (paper) => paper.Context?.trim() === context && !paper.decision
+        );
+
+        /*
+        * Se tutti i paper di questo Context sono già stati valutati, non fare nulla.
+        */
+       
+        if (
+          targetIndex === -1
+        ) {
+          return;
+        }
+
+        setCurrentIndex(targetIndex);
+
+        setMenuOpen(false);
+      },
+      [papers]
+    );
+
+  /*
+   * ============================================================
+   * CONTEXT STATUS *
+   * ============================================================
+   *
+   * Serve per sapere quali pulsanti Context hanno ancora paper da valutare.
+   */
+  
+  const contextStatus =
+    useMemo(() => {
+      return contexts.map((context) => {
+        const firstUndecidedIndex = papers.findIndex(
+          (paper) => paper.Context?.trim() === context && !paper.decision
+        );
+        return {
+          context,
+          firstUndecidedIndex,
+          available: firstUndecidedIndex !== -1,
+        };
+      });
+    }, [papers]);
+
+  /*
+   * ============================================================
    * CURRENT POSITION
    * ============================================================
    */
@@ -1012,6 +1075,106 @@ function App() {
                 shadow-[5px_5px_0_rgba(0,0,0,0.35)]
               "
             >
+
+
+              {/* ================================================= */}
+              {/* CONTEXT NAVIGATION */}
+              {/* ================================================= */}
+              <div
+                className="
+                  border-b border-white/10
+                  px-4 py-4
+                "
+              >
+                <div
+                  className="
+                    mb-3
+                    flex items-center
+                    justify-between
+                  "
+                >
+                  <span
+                    className="
+                      font-mono text-xs
+                      font-bold uppercase
+                      tracking-wide
+                      text-white/70
+                    "
+                  >
+                    Context
+                  </span>
+                  
+                  <span
+                    className="
+                      font-mono text-[10px]
+                      text-white/35
+                    "
+                  >
+                    salta a
+                  </span>
+                </div>
+                
+                <div
+                  className="
+                    flex flex-col
+                    gap-1
+                  "
+                >
+                  {contextStatus.map(
+                    ({
+                      context,
+                      available,
+                    }) => (
+                      <button
+                        key={context}
+                        type="button"
+                        onClick={() =>
+                          handleGoToContext(context)
+                        }
+                        disabled={!available}
+                        className="
+                          flex w-full
+                          items-center
+                          justify-between
+                          border
+                          border-white/10
+                          bg-white/5
+                          px-3
+                          py-2
+                          text-left
+                          font-mono
+                          text-[10px]
+                          font-bold
+                          uppercase
+                          tracking-wide
+                          text-white/70
+                          transition
+                          hover:bg-white/10
+                          hover:text-white
+                          disabled:cursor-not-allowed
+                          disabled:border-white/5
+                          disabled:bg-transparent
+                          disabled:text-white/20
+                        "
+                      >
+                        <span>
+                          {context}
+                        </span>
+                        
+                        <span
+                          className="
+                            ml-2
+                            text-white/30
+                          "
+                        >
+                          {available ? "→" : "✓"}
+                        </span>
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+
               {/* ================================================= */}
               {/* STATS */}
               {/* ================================================= */}
@@ -1502,6 +1665,9 @@ function App() {
           />
         </div>
       </section>
+
+
+
 
       {/* ====================================================== */}
       {/* CURRENT POSITION */}

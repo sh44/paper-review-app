@@ -220,7 +220,7 @@ function PaperCard({
           min-h-0
           flex-1
           overflow-y-auto
-          px-6 pb-7 pt-5
+          px-6 pb-32 pt-5
           sm:px-10
         "
       >
